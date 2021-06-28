@@ -16,6 +16,7 @@ public:
     void set_size(uint32_t size);
     BufferError read(uint8_t *data, const uint32_t len, const uint32_t timeout = 0) override;
     BufferError write(const uint8_t *data, const uint32_t len) override;
+    uint8_t read_next_byte();
     virtual ~CircularBuffer();
 private:
     inline unsigned count(void);

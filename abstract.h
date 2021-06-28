@@ -7,12 +7,13 @@
 
 
 enum Type{
-    Header = 0b00000001,
-    Lenght = 0b00000010,
-    CMD    = 0b00000100,
-    Footer = 0b00001000,
-    CRC    = 0b00010000,
-    Data   = 0b00100000
+    Header  = 0b00000001,
+    Lenght  = 0b00000010,
+    CMD     = 0b00000100,
+    Footer  = 0b00001000,
+    CRC     = 0b00010000,
+    Data    = 0b00100000,
+    Other   = 0b01000000
 };
 
 class AbstractPacketSection {
@@ -47,24 +48,23 @@ private:
 
 
 struct Lenght {
-    int start_index;
     int len;
     bool is_msb;
+    int include;
 };
 class AbstractMessageFactory;
 
 struct CMD {
-    int start_index;
     int len;
     std::shared_ptr<AbstractMessageFactory> factory;
 };
 
-struct Data{
-    int start_index;
+struct Header {
     int len;
+    std::string content;
 };
 
-struct Header {
+struct Other {
     int len;
     std::string content;
 };
@@ -155,6 +155,7 @@ public:
     virtual struct CRC get_crc() const = 0;
     virtual struct CMD get_cmd() const = 0;
     virtual struct Footer get_footer() const = 0;
+    virtual struct
     virtual bool has_header() const = 0;
     virtual bool has_len() const = 0;
     virtual bool has_crc() const = 0;

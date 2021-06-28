@@ -79,6 +79,14 @@ BufferError CircularBuffer::write(const uint8_t *data, const uint32_t len)
     return ret_val;
 }
 
+uint8_t CircularBuffer::read_next_byte()
+{
+    uint8_t data;
+    uint8_t *data_ptr = &data;
+    read(data_ptr, 1);
+    return data;
+}
+
 void CircularBuffer::set_size(uint32_t size)
 {
     std::unique_lock<std::mutex> lk(m);

@@ -12,7 +12,7 @@ class AbstractBuffer
 {
 public:
     virtual BufferError read(uint8_t *data, const uint32_t len, const uint32_t timeout = 0) = 0;
-//    virtual char get_next_byte() = 0;
+    virtual uint8_t read_next_byte() = 0;
     virtual BufferError write(const uint8_t *data, const uint32_t len) = 0;
     virtual ~AbstractBuffer() {}
 };

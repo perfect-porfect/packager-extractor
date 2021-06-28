@@ -22,14 +22,13 @@ public:
     std::string get_next_bytes(const uint bytes);
     void receive_data(const char *buffer, const size_t size);
     void stop_waiting_for_data();
+    uint8_t read_next_byte();
     ~FastBuffer();
+
 private:
     char *input_buffer_;
     uint32_t volatile buffer_write_index_;
     uint32_t volatile buffer_read_index_;
     bool finish_waiting_;
     uint32_t buffer_size_;
-
-    // AbstractBuffer interface
-public:
 };

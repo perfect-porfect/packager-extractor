@@ -67,6 +67,11 @@ void FastBuffer::stop_waiting_for_data()
     finish_waiting_ = false;
 }
 
+uint8_t FastBuffer::read_next_byte()
+{
+
+}
+
 FastBuffer::~FastBuffer()
 {
     delete input_buffer_;
