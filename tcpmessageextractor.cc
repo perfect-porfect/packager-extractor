@@ -26,23 +26,23 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
     int data_len;
     for (auto section : packet_sections_) {
         switch(section) {
-        case Type::Header : {
+        case PacketSections::Header : {
             find_header();
             break;
         }
-        case Type::CMD : {
+        case PacketSections::CMD : {
             std::string cmd = get_next_bytes(cmd_len_);
             msg = message_factory_->build_message(cmd.data());
             break;
         }
-        case Type::Lenght : {
+        case PacketSections::Lenght : {
             std::string len_size = get_next_bytes(data_len);
             data_len = calc_len(len_size.data(), packet_len_, is_pkt_len_msb_);
 
             has_len = true;
             break;
         }
-        case Type::Data : {
+        case PacketSections::Data : {
             if (has_len) {
                 data = new uint8_t[data_len];
             } else {
@@ -55,16 +55,16 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
             }
             break;
         }
-        case Type::CRC : {
+        case PacketSections::CRC : {
             std::string crc_data = get_next_bytes(crc_len_);
             is_crc_ok = crc_checker_->is_valid((char*)data, data_len, crc_data.data(), crc_data.size());
             break;
         }
-        case Type::Footer : {
+        case PacketSections::Footer : {
             is_footer_ok = can_find_footer();
             break;
         }
-        case Type::Other :{
+        case PacketSections::Other :{
 
             break;
         }

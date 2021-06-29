@@ -1,7 +1,7 @@
 #include "buffer_template.h"
 
-template <class Type>
-Buffer<Type>::Buffer(uint32_t size)
+template <class PacketSections>
+Buffer<PacketSections>::Buffer(uint32_t size)
     : size_(size)
 {
     write_index_ = 0;
@@ -9,14 +9,15 @@ Buffer<Type>::Buffer(uint32_t size)
     buffer_.resize(size_);
 }
 
-template<class Type>
-void Buffer<Type>::write(Type data)
+template<class PacketSections>
+void Buffer<PacketSections>::write(PacketSections data)
 {
     buffer_[write_index_] = data;
+    write_index_++;
 }
 
-template<class Type>
-Type Buffer<Type>::get_next_packet()
+template<class PacketSections>
+PacketSections Buffer<PacketSections>::get_next_packet()
 {
 
 }

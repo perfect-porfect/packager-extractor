@@ -69,9 +69,7 @@ private:
     boost::asio::io_context io_context_;
     static std::atomic<int> ID_Counter_;
 
-
     // Extractor parameters
-//    std::shared_ptr<Buffer<std::shared_ptr<AbstractMessage>>> messages_buffer_;
     std::shared_ptr<AbstractRawExtractor> extractor_;
 
 };

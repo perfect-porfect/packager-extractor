@@ -1,5 +1,6 @@
 #include <iostream>
 #include "tcpserver.h"
+#include "circular_buffer.h"
 
 
 class FuckMessage : public AbstractSerializableMessage {
@@ -7,7 +8,7 @@ public:
     void serialize(char *buffer, size_t size) { }
     void deserialize(const char *buffer, size_t size) { }
     size_t get_serialize_size() { return 4; }
-    int get_type() const { };
+    int get_PacketSections() const { };
 
 };
 
@@ -25,25 +26,25 @@ public:
 class ClientPacket : public AbstractRawExtractor {
 public:
     ClientPacket(){}
-    int get_packet_len_include() const { return Type::Data | Type::Footer ;}
-    bool is_packet_len_msb() const     { return false; }
+    int get_packet_len_include() const { return PacketSections::Data | PacketSections::Footer; }
     int get_header_len() const         { return 2; }
     int get_packet_len() const         { return 4; }
     int get_footer_len() const         { return 4; }
     int get_cmd_len() const            { return 1; }
     int get_crc_len() const            { return 0; }
+    bool is_packet_len_msb() const     { return false; }
     std::string get_header_content() const { return {(char)0xff, (char)0x00}; }
     std::string get_footer_content() const { return {(char)0x00, (char)0xfa}; };
     std::shared_ptr<AbstractMessageFactory> get_messages_factory() const { return std::make_shared<MessageFactory>(); }
     std::shared_ptr<AbstractCRC> get_crc_checker() const { return nullptr; } ;
-    std::vector<Type> get_packet_sections() const { std::vector<Type> sections; sections.push_back(Type::Header); sections.push_back(Type::CMD); sections.push_back(Type::Data);
-                                                  return sections;}
+    std::vector<PacketSections> get_packet_sections() const { std::vector<PacketSections> sections; sections.push_back(PacketSections::Header); sections.push_back(PacketSections::CMD); sections.push_back(PacketSections::Data);
+                                                              return sections;}
 };
 
 
 
 
-void test(int index  , int size)
+void test(int index, int size)
 {
     std::cout << "index : " << index  << " size: " << size << std::endl;
 }
@@ -116,9 +117,29 @@ void start_tcp_server()
         all_clients[0]->async_send("asdf", 4, function);
     }
 }
+CircularBuffer buffer_;
+uint8_t* data = new uint8_t[4];
+
+void thread_read() {
+    while(1) {
+        buffer_.read(data, 4, 4000);
+    }
+}
+
+void thread_write() {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::cout << "write1" << std::endl;
+    buffer_.write((uint8_t*)"asdf", 4);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::cout << "write2" << std::endl;
+    buffer_.write((uint8_t*)"A", 1);
+}
 
 int main()
 {
-    start_tcp_server();
+    std::thread read_thread(thread_read);
+    std::thread write_thread(thread_write);
+    read_thread.join();
+//    start_tcp_server();
 //    start_tcp_client();
 }

@@ -34,13 +34,13 @@ BufferError CircularBuffer::read(uint8_t *data, const uint32_t len, const uint32
     uint32_t len_data = len;
     std::unique_lock<std::mutex> lk(m);
     if (timeout > 0)
-        read_signal_.wait_for(lk, std::chrono::milliseconds(timeout), [&] { return check_free_space(len_data); });
+        read_signal_.wait_for(lk, std::chrono::milliseconds(timeout), [&] {static int counter = 0; std::cout << "#" << counter++ << " fuck" << std::endl; return check_free_space(len_data); });
     else
         read_signal_.wait(lk, [&] {return check_free_space(len_data);});
 
     if (count() < len_data || destructor_call_)
         return BufferError::BUF_TIMEOUT;
-
+    std::cout << "timeout" << std::endl;
     while (len_data > 0) {
         // don't copy beyond the end of the buffer
         uint32_t c = std::min(len_data, size_ - tail_);

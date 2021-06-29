@@ -6,7 +6,7 @@
 #include "buffer_base.h"
 
 
-enum Type{
+enum PacketSections{
     Header  = 0b00000001,
     Lenght  = 0b00000010,
     CMD     = 0b00000100,
@@ -16,119 +16,80 @@ enum Type{
     Other   = 0b01000000
 };
 
-//class AbstractPacketSection {
-//public:
-//    virtual Type get_type() const = 0;
-//    virtual int get_start_index() const = 0;
-//    virtual int get_section_len() const = 0;
-//};
-
-//class HeaderSection : AbstractPacketSection{
-//public:
-//    HeaderSection(int len) { len_ = len; }
-//    Type get_type() const { return Type::Header;}
-//    int get_start_index() const  { return 0; }
-//    int get_section_len() const { return len_;}
-//private:
-//    int len_;
-//};
-
-//class CMDSection : AbstractPacketSection{
-//public:
-//    CMDSection(int len, int start_index) { len_ = len; start_index_ = start_index;}
-//    Type get_type() const { return Type::CMD;}
-//    int get_start_index() const  { return start_index_; }
-//    int get_section_len() const { return len_;}
-//private:
-//    int len_;
-//    int start_index_;
-//};
-
 
 class AbstractCRC{
 public:
+    //!
+    //! \brief is_valid check data in packet is valid or not.
+    //! \param data  include data section in packet
+    //! \param data_size data section size in packet
+    //! \param crc_data data of crc
+    //! \param crc_size size of crc
+    //! \return true mean the crc match with data.
+    //!
     virtual bool is_valid(const char* data, size_t data_size, const char* crc_data, size_t crc_size) const = 0;
 };
 
 
 //!
-//! \brief The AbstractSerializableMessage class is an interface which implement the Message and used for any type of message that can serial and deseriale itself.
+//! \brief The AbstractSerializableMessage class is an interface which implement
+//! the Message and used for any type of message that can serial and deseriale itself.
 //!
-//!
+
 class AbstractSerializableMessage
 {
 public :
     //!
-    //! \brief serialize method can fill the input buffer by serializing values . the values in serializing and deserializing should be same.
+    //! \brief serialize method can fill the input buffer by serializing values .
+    //!        the values in serializing and deserializing should be same.
     //! \param buffer for containg the serializing data
     //! \param size is used for available buffer size
     //!
-    virtual void serialize(char * buffer, size_t size) = 0;
+    virtual void serialize(char* buffer, size_t size) = 0;
     //!
-    //! \brief deserialize method is used for setting properties and members from buffer as same method as serialize
+    //! \brief deserialize method is used for setting properties and members
+    //!        from buffer as same method as serialize
     //! \param buffer is used for reading values
     //! \param size the values
     //!
     virtual void deserialize(const char * buffer, size_t size) = 0 ;
     //!
     //! \brief getserialSize method return the size of serializing and deserializing method
-    //! \return the size_t value which show the serializ size
+    //! \return the size_t value which show the serializ size this function will used when
+    //!         packet not include packet_len
     //!
     virtual size_t get_serialize_size() = 0;
-    virtual int get_type() const = 0;
     virtual ~AbstractSerializableMessage(){} //! virtual interface destructor
 };
-
-//class AbstractMessage {
-//public:
-
-//};
 
 class AbstractMessageFactory
 {
 public:
+    //!
+    //! \brief build_message is a factory for all messages that packet includes.
+    //! \param cmd is a section that use in packet
+    //! \return  must return a serializablemessage for save all messages
+    //!
     virtual std::shared_ptr<AbstractSerializableMessage> build_message(const std::string cmd) = 0;
-};
-
-class AbstractMessageExtractor{
-public :
-    virtual void receive_data(const uint8_t *buffer, const size_t size) = 0;
-    virtual boost::signals2::connection notify_me_when_msg_extract(std::function<void (std::shared_ptr<AbstractSerializableMessage> message)>) = 0;
-    virtual std::shared_ptr<AbstractMessageFactory> get_factory() const = 0;
-};
-
-class AbstractMessagePackager {
-public:
-    virtual boost::signals2::connection notify_me_when_msg_package(std::function< void (char * buffer, size_t size)>) = 0;
-    virtual void package_message(std::shared_ptr<AbstractSerializableMessage> message) = 0;
-};
-
-struct Lenght {
-    int len;
-    bool is_msb;
-    int include;
-};
-
-struct Other {
-    int len;
-    std::string content;
 };
 
 
 class AbstractRawExtractor {
 public:
     virtual int get_packet_len_include() const = 0;
-    virtual bool is_packet_len_msb() const = 0;
     virtual int get_header_len() const = 0;
     virtual int get_packet_len() const = 0;
     virtual int get_footer_len() const = 0;
     virtual int get_cmd_len() const = 0;
     virtual int get_crc_len() const = 0;
+
+    virtual bool is_packet_len_msb() const = 0;
+
     virtual std::string get_header_content() const = 0;
     virtual std::string get_footer_content() const = 0;
 
     virtual std::shared_ptr<AbstractMessageFactory> get_messages_factory() const = 0;
     virtual std::shared_ptr<AbstractCRC> get_crc_checker() const  = 0;
-    virtual std::vector<Type> get_packet_sections() const = 0;
+    virtual std::vector<PacketSections> get_packet_sections() const = 0;
 };
 

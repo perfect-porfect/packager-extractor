@@ -27,7 +27,7 @@ private:
     int pkt_len_include_;
     std::string header_content_;
     std::string footer_content_;
-    std::vector<Type> packet_sections_;
+    std::vector<PacketSections> packet_sections_;
 };
 
 
