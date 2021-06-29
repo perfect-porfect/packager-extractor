@@ -1,4 +1,5 @@
 #include "tcpmessageextractor.h"
+#include <iostream>
 
 TCPMessageExtractor::TCPMessageExtractor(std::shared_ptr<AbstractRawExtractor> extractor, std::shared_ptr<AbstractBuffer> buffer)
     : extractor_(extractor), buffer_(buffer)
@@ -22,9 +23,12 @@ TCPMessageExtractor::TCPMessageExtractor(std::shared_ptr<AbstractRawExtractor> e
 std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
 {
     std::shared_ptr<AbstractSerializableMessage> msg;
-    std::string data;
-    bool is_crc_footer_ok = true;
-
+    uint8_t* data;
+    bool is_crc_ok = true;
+    bool is_footer_ok = true;
+    bool has_len = false;
+    int data_len;
+    int include;
     for (auto section : packet_sections_) {
         switch(section) {
         case Type::Header : {
@@ -32,25 +36,37 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
             break;
         }
         case Type::CMD : {
-            std::string cmd = find_cmd();
+            std::string cmd = get_next_bytes(cmd_.len);
             auto msg = cmd_.factory->build_message(cmd.data());
             break;
         }
         case Type::Lenght : {
-            int len = find_len();
-            int include = len_.include;
+            std::string len_size = get_next_bytes(len_.len);
+            data_len = calc_len(len_size.data(), len_.len, len_.is_msb);
+            include = len_.include;
+            has_len = true;
             break;
         }
         case Type::Data : {
+            if (has_len) {
+                data = new uint8_t[data_len];
+            } else {
+                data = new uint8_t[msg->get_serialize_size()];
+            }
 
+            auto buf_ret = buffer_->read(data, data_len);
+            if (buf_ret != BufferError::BUF_NOERROR) {
+                std::cout << "fucking buffer" << std::endl;
+            }
             break;
         }
         case Type::CRC : {
-
+            std::string crc_data = get_next_bytes(crc_.len);
+            is_crc_ok = crc_.crc_checker->is_valid((char*)data, data_len, crc_data.data(), crc_data.size());
             break;
         }
         case Type::Footer : {
-
+            is_footer_ok = can_find_footer();
             break;
         }
         case Type::Other :{
@@ -59,6 +75,9 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
         }
         }
     }
+    if (is_crc_ok && is_footer_ok)
+        msg->serialize((char*)data, data_len);
+
     return msg;
 }
 
@@ -75,27 +94,6 @@ void TCPMessageExtractor::find_header()
     }
 }
 
-std::string TCPMessageExtractor::find_cmd()
-{
-    int header_index = 0;
-    std::string cmd;
-    cmd.resize(cmd_.len);
-    for (int index = 0; index < cmd_.len; index++)
-        cmd[index] = buffer_->read_next_byte();
-    return cmd;
-}
-
-int TCPMessageExtractor::find_len()
-{
-    int len = 0;
-    std::string len_data;
-    len_data.resize(len_.len);
-    for (int i = 0; i < len_.len; i++)
-        len_data[i] = buffer_->read_next_byte();
-
-    len = calc_len(len_data.data(), len_.len, len_.is_msb);
-    return len;
-}
 
 int TCPMessageExtractor::calc_len(const char * data, uint32_t size, bool is_msb)
 {
@@ -116,10 +114,10 @@ int TCPMessageExtractor::calc_len(const char * data, uint32_t size, bool is_msb)
 
     }
     case 4: {
-       if (is_msb)
-       len =  int((unsigned char)(data[0]) << 24 | (unsigned char)(data[1]) << 16 |  (unsigned char)(data[2]) << 8 | (unsigned char)(data[3]));
+        if (is_msb)
+            len =  int((unsigned char)(data[0]) << 24 | (unsigned char)(data[1]) << 16 |  (unsigned char)(data[2]) << 8 | (unsigned char)(data[3]));
         else
-           len =  int((unsigned char)(data[0]) << 24 | (unsigned char)(data[1]) << 16 |  (unsigned char)(data[2]) << 8 | (unsigned char)(data[3]));
+            len =  int((unsigned char)(data[3]) << 24 | (unsigned char)(data[2]) << 16 |  (unsigned char)(data[1]) << 8 | (unsigned char)(data[0]));
 
     }
     case 5 : {
@@ -135,4 +133,24 @@ int TCPMessageExtractor::calc_len(const char * data, uint32_t size, bool is_msb)
 
     }
     }
+}
+
+
+bool TCPMessageExtractor::can_find_footer()
+{
+    std::string footer = get_next_bytes(footer_.len);
+    for(int index = 0; index < footer_.len; index++) {
+        if (footer[index] != footer_.content[index])
+            return false;
+    }
+    return true;
+}
+
+std::string TCPMessageExtractor::get_next_bytes(uint32_t size)
+{
+    std::string data;
+    data.resize(size);
+    for (uint32_t i = 0; i < size; i++)
+        data[i] = buffer_->read_next_byte();
+    return data;
 }

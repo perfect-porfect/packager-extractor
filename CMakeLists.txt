@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(TCP_LIB LANGUAGES CXX)
+project(Packeger_Extractor LANGUAGES CXX)
 file (GLOB  SRCS_HEDS *.cc *.h )
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

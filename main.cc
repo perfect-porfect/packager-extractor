@@ -11,8 +11,8 @@ void blocking_send(std::shared_ptr<TCPClient> tcp_client)
     std::string data = "hello\n";
     int counter = 0;
     while(1) {
-        tcp_client->send(data.data(), data.size());
-        if (counter == 2)
+        int bytes = tcp_client->send(data.data(), data.size());
+        if (int(data.size()) == bytes)
             break;
         if (counter  == 1) {
             tcp_client->disconnect();

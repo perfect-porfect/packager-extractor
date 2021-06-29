@@ -76,7 +76,7 @@ struct Footer {
 
 class AbstractCRC{
 public:
-    virtual bool is_valid(char* data) const = 0;
+    virtual bool is_valid(const char* data, size_t data_size, const char* crc_data, size_t crc_size) const = 0;
 };
 
 struct CRC{
@@ -155,7 +155,7 @@ public:
     virtual struct CRC get_crc() const = 0;
     virtual struct CMD get_cmd() const = 0;
     virtual struct Footer get_footer() const = 0;
-    virtual struct
+//    virtual struct
     virtual bool has_header() const = 0;
     virtual bool has_len() const = 0;
     virtual bool has_crc() const = 0;
