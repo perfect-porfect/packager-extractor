@@ -9,27 +9,24 @@ public:
     std::shared_ptr<AbstractSerializableMessage> find_message();
 private:
     void find_header();
-    std::string find_cmd();
-    int find_len();
-    int calc_len(const char *data, uint32_t size, bool is_msb);
-    std::string find_crc();
     bool can_find_footer();
+    int calc_len(const char *data, uint32_t size, bool is_msb);
     std::string get_next_bytes(uint32_t size);
+
     //Extractor
-    std::shared_ptr<AbstractRawExtractor> extractor_;
-    std::shared_ptr<AbstractBuffer> buffer_;
     std::shared_ptr<AbstractMessageFactory> message_factory_;
-    bool has_extractor_;
-    bool has_header_;
-    bool has_footer_;
-    bool has_len_;
-    bool has_cmd_;
-    bool has_crc_;
-    struct Footer footer_;
-    struct Header header_;
-    struct Lenght len_;
-    struct CMD cmd_;
-    struct CRC crc_;
+    std::shared_ptr<AbstractRawExtractor> extractor_;
+    std::shared_ptr<AbstractCRC> crc_checker_;
+    std::shared_ptr<AbstractBuffer> buffer_;
+    int footer_len_;
+    int header_len_;
+    int packet_len_;
+    int cmd_len_;
+    int crc_len_;
+    bool is_pkt_len_msb_;
+    int pkt_len_include_;
+    std::string header_content_;
+    std::string footer_content_;
     std::vector<Type> packet_sections_;
 };
 

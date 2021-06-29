@@ -16,77 +16,39 @@ enum Type{
     Other   = 0b01000000
 };
 
-class AbstractPacketSection {
-public:
-    virtual Type get_type() const = 0;
-    virtual int get_start_index() const = 0;
-    virtual int get_section_len() const = 0;
-};
+//class AbstractPacketSection {
+//public:
+//    virtual Type get_type() const = 0;
+//    virtual int get_start_index() const = 0;
+//    virtual int get_section_len() const = 0;
+//};
 
-class HeaderSection : AbstractPacketSection{
-public:
-    HeaderSection(int len) { len_ = len; }
-    Type get_type() const { return Type::Header;}
-    int get_start_index() const  { return 0; }
-    int get_section_len() const { return len_;}
-private:
-    int len_;
-};
+//class HeaderSection : AbstractPacketSection{
+//public:
+//    HeaderSection(int len) { len_ = len; }
+//    Type get_type() const { return Type::Header;}
+//    int get_start_index() const  { return 0; }
+//    int get_section_len() const { return len_;}
+//private:
+//    int len_;
+//};
 
-class CMDSection : AbstractPacketSection{
-public:
-    CMDSection(int len, int start_index) { len_ = len; start_index_ = start_index;}
-    Type get_type() const { return Type::CMD;}
-    int get_start_index() const  { return start_index_; }
-    int get_section_len() const { return len_;}
-private:
-    int len_;
-    int start_index_;
-};
+//class CMDSection : AbstractPacketSection{
+//public:
+//    CMDSection(int len, int start_index) { len_ = len; start_index_ = start_index;}
+//    Type get_type() const { return Type::CMD;}
+//    int get_start_index() const  { return start_index_; }
+//    int get_section_len() const { return len_;}
+//private:
+//    int len_;
+//    int start_index_;
+//};
 
-
-
-
-struct Lenght {
-    int len;
-    bool is_msb;
-    int include;
-};
-class AbstractMessageFactory;
-
-struct CMD {
-    int len;
-    std::shared_ptr<AbstractMessageFactory> factory;
-};
-
-struct Header {
-    int len;
-    std::string content;
-};
-
-struct Other {
-    int len;
-    std::string content;
-};
-
-struct Footer {
-    int len;
-    std::string content;
-};
 
 class AbstractCRC{
 public:
     virtual bool is_valid(const char* data, size_t data_size, const char* crc_data, size_t crc_size) const = 0;
 };
-
-struct CRC{
-    int start_index;
-    int len;
-    int start_data_index;
-    int end_data_index;
-    std::shared_ptr<AbstractCRC> crc_checker;
-};
-
 
 
 //!
@@ -114,53 +76,59 @@ public :
     //!
     virtual size_t get_serialize_size() = 0;
     virtual int get_type() const = 0;
-    virtual bool has_len() const = 0;
-    virtual struct Lenght get_len() const = 0;
-//    virtual struct Data
     virtual ~AbstractSerializableMessage(){} //! virtual interface destructor
 };
 
-class AbstractMessage{
+//class AbstractMessage {
+//public:
 
-};
-
+//};
 
 class AbstractMessageFactory
 {
 public:
-    virtual std::shared_ptr<AbstractMessage> build_message(const char * cmd) = 0;
+    virtual std::shared_ptr<AbstractSerializableMessage> build_message(const std::string cmd) = 0;
 };
-
-
 
 class AbstractMessageExtractor{
 public :
     virtual void receive_data(const uint8_t *buffer, const size_t size) = 0;
-    virtual boost::signals2::connection notify_me_when_msg_extract(std::function<void (std::shared_ptr<AbstractMessage> message)>) = 0;
+    virtual boost::signals2::connection notify_me_when_msg_extract(std::function<void (std::shared_ptr<AbstractSerializableMessage> message)>) = 0;
     virtual std::shared_ptr<AbstractMessageFactory> get_factory() const = 0;
 };
 
 class AbstractMessagePackager {
 public:
     virtual boost::signals2::connection notify_me_when_msg_package(std::function< void (char * buffer, size_t size)>) = 0;
-    virtual void package_message(std::shared_ptr<AbstractMessage> message) = 0;
+    virtual void package_message(std::shared_ptr<AbstractSerializableMessage> message) = 0;
 };
 
+struct Lenght {
+    int len;
+    bool is_msb;
+    int include;
+};
+
+struct Other {
+    int len;
+    std::string content;
+};
 
 
 class AbstractRawExtractor {
 public:
-    virtual struct Lenght get_len() const = 0;
-    virtual struct Header get_header() const = 0;
-    virtual struct CRC get_crc() const = 0;
-    virtual struct CMD get_cmd() const = 0;
-    virtual struct Footer get_footer() const = 0;
-//    virtual struct
-    virtual bool has_header() const = 0;
-    virtual bool has_len() const = 0;
-    virtual bool has_crc() const = 0;
-    virtual bool has_cmd() const = 0;
-    virtual bool has_foofer() const = 0;
-    virtual std::shared_ptr<AbstractMessage> find_message() = 0;
+    virtual int get_packet_len_include() const = 0;
+    virtual bool is_packet_len_msb() const = 0;
+    virtual int get_header_len() const = 0;
+    virtual int get_packet_len() const = 0;
+    virtual int get_footer_len() const = 0;
+    virtual int get_cmd_len() const = 0;
+    virtual int get_crc_len() const = 0;
+    virtual std::string get_header_content() const = 0;
+    virtual std::string get_footer_content() const = 0;
+
+    virtual std::shared_ptr<AbstractMessageFactory> get_messages_factory() const = 0;
+    virtual std::shared_ptr<AbstractCRC> get_crc_checker() const  = 0;
+    virtual std::vector<Type> get_packet_sections() const = 0;
 };
 

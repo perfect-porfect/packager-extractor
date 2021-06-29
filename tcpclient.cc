@@ -138,10 +138,10 @@ void TCPClient::handle_write(const boost::system::error_code &error, const size_
 
 void TCPClient::extract_message()
 {
-    while(is_connected_ /* && buffer empty*/) {
-        auto msg = extractor_->find_message();
+//    while(is_connected_ /* && buffer empty*/) {
+//        auto msg = extractor_->find_message();
 //        messages_buffer_.
-    }
+//    }
 }
 
 boost::signals2::connection TCPClient::notify_me_when_disconnected(std::function<void (int)> func)
@@ -190,7 +190,7 @@ int TCPClient::get_id() const
     return id_;
 }
 
-std::shared_ptr<AbstractMessage> TCPClient::get_next_packet()
+std::shared_ptr<AbstractSerializableMessage> TCPClient::get_next_packet()
 {
 
 }

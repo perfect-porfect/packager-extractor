@@ -4,20 +4,16 @@
 TCPMessageExtractor::TCPMessageExtractor(std::shared_ptr<AbstractRawExtractor> extractor, std::shared_ptr<AbstractBuffer> buffer)
     : extractor_(extractor), buffer_(buffer)
 {
-    has_header_ = extractor_->has_header();
-    has_footer_ = extractor_->has_foofer();
-    has_len_ = extractor_->has_len();
-    has_cmd_ = extractor_->has_cmd();
-    has_crc_ = extractor_->has_crc();
-
-    header_ = extractor_->get_header();
-    footer_ = extractor_->get_footer();
-    len_ = extractor_->get_len();
-    cmd_ = extractor_->get_cmd();
-    crc_ = extractor_->get_crc();
-
-    //    packet_sections_ = extractor_->get_sections();
-
+    packet_sections_ = extractor_->get_packet_sections();
+    message_factory_ = extractor_->get_messages_factory();
+    pkt_len_include_ = extractor_->get_packet_len_include();
+    is_pkt_len_msb_  = extractor_->is_packet_len_msb();
+    crc_checker_ = extractor_->get_crc_checker();
+    footer_len_  = extractor_->get_footer_len();
+    header_len_  = extractor_->get_header_len();
+    packet_len_  = extractor_->get_packet_len();
+    cmd_len_     = extractor_->get_cmd_len();
+    crc_len_     = extractor_->get_crc_len();
 }
 
 std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
@@ -28,7 +24,6 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
     bool is_footer_ok = true;
     bool has_len = false;
     int data_len;
-    int include;
     for (auto section : packet_sections_) {
         switch(section) {
         case Type::Header : {
@@ -36,14 +31,14 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
             break;
         }
         case Type::CMD : {
-            std::string cmd = get_next_bytes(cmd_.len);
-            auto msg = cmd_.factory->build_message(cmd.data());
+            std::string cmd = get_next_bytes(cmd_len_);
+            msg = message_factory_->build_message(cmd.data());
             break;
         }
         case Type::Lenght : {
-            std::string len_size = get_next_bytes(len_.len);
-            data_len = calc_len(len_size.data(), len_.len, len_.is_msb);
-            include = len_.include;
+            std::string len_size = get_next_bytes(data_len);
+            data_len = calc_len(len_size.data(), packet_len_, is_pkt_len_msb_);
+
             has_len = true;
             break;
         }
@@ -61,8 +56,8 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
             break;
         }
         case Type::CRC : {
-            std::string crc_data = get_next_bytes(crc_.len);
-            is_crc_ok = crc_.crc_checker->is_valid((char*)data, data_len, crc_data.data(), crc_data.size());
+            std::string crc_data = get_next_bytes(crc_len_);
+            is_crc_ok = crc_checker_->is_valid((char*)data, data_len, crc_data.data(), crc_data.size());
             break;
         }
         case Type::Footer : {
@@ -76,8 +71,7 @@ std::shared_ptr<AbstractSerializableMessage> TCPMessageExtractor::find_message()
         }
     }
     if (is_crc_ok && is_footer_ok)
-        msg->serialize((char*)data, data_len);
-
+        msg->deserialize((char*)data, data_len);
     return msg;
 }
 
@@ -85,9 +79,9 @@ void TCPMessageExtractor::find_header()
 {
     int header_index = 0;
     while(1) {
-        if (header_index == header_.len)
+        if (header_index == header_len_)
             break;
-        if (header_.content[header_index] ==  buffer_->read_next_byte())
+        if (header_content_[header_index] ==  buffer_->read_next_byte())
             header_index++;
         else
             header_index = 0;
@@ -138,9 +132,9 @@ int TCPMessageExtractor::calc_len(const char * data, uint32_t size, bool is_msb)
 
 bool TCPMessageExtractor::can_find_footer()
 {
-    std::string footer = get_next_bytes(footer_.len);
-    for(int index = 0; index < footer_.len; index++) {
-        if (footer[index] != footer_.content[index])
+    std::string footer = get_next_bytes(footer_len_);
+    for(int index = 0; index < footer_len_; index++) {
+        if (footer[index] != footer_content_[index])
             return false;
     }
     return true;

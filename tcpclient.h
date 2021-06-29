@@ -38,7 +38,7 @@ public:
     short get_port() const;
     int get_id() const;
 
-    std::shared_ptr<AbstractMessage> get_next_packet();
+    std::shared_ptr<AbstractSerializableMessage> get_next_packet();
     BufferError get_next_bytes(uint8_t *data, const uint32_t len, const uint32_t timeout_ms = 0);
     uint8_t get_next_byte();
     void start_print_send_receive_rate();

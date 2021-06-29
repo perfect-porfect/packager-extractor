@@ -1,6 +1,48 @@
 #include <iostream>
 #include "tcpserver.h"
 
+
+class FuckMessage : public AbstractSerializableMessage {
+public:
+    void serialize(char *buffer, size_t size) { }
+    void deserialize(const char *buffer, size_t size) { }
+    size_t get_serialize_size() { return 4; }
+    int get_type() const { };
+
+};
+
+
+class MessageFactory : public AbstractMessageFactory{
+public:
+    std::shared_ptr<AbstractSerializableMessage> build_message(const std::string cmd) {
+        if (cmd[0] == (char)0xd1 && cmd[1] == char(0xd2))
+            return std::make_shared<FuckMessage>();
+        return nullptr;
+    }
+};
+
+
+class ClientPacket : public AbstractRawExtractor {
+public:
+    ClientPacket(){}
+    int get_packet_len_include() const { return Type::Data | Type::Footer ;}
+    bool is_packet_len_msb() const     { return false; }
+    int get_header_len() const         { return 2; }
+    int get_packet_len() const         { return 4; }
+    int get_footer_len() const         { return 4; }
+    int get_cmd_len() const            { return 1; }
+    int get_crc_len() const            { return 0; }
+    std::string get_header_content() const { return {(char)0xff, (char)0x00}; }
+    std::string get_footer_content() const { return {(char)0x00, (char)0xfa}; };
+    std::shared_ptr<AbstractMessageFactory> get_messages_factory() const { return std::make_shared<MessageFactory>(); }
+    std::shared_ptr<AbstractCRC> get_crc_checker() const { return nullptr; } ;
+    std::vector<Type> get_packet_sections() const { std::vector<Type> sections; sections.push_back(Type::Header); sections.push_back(Type::CMD); sections.push_back(Type::Data);
+                                                  return sections;}
+};
+
+
+
+
 void test(int index  , int size)
 {
     std::cout << "index : " << index  << " size: " << size << std::endl;
@@ -54,6 +96,9 @@ void new_connection(TCPClient *client)
 {
     all_clients[client->get_id()] = client;
     std::cout << "id: " << client->get_id() << " port: " << client->get_port() << " ip: " << client->get_ip() << std::endl;
+    auto extractor = std::make_shared<ClientPacket>();
+    client->set_extractor(extractor);
+    client->get_next_packet();
     client->start();
 }
 
